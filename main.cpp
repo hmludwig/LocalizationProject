@@ -9,6 +9,10 @@
 #include <pcl/point_types.h>
 #include <pcl/registration/icp.h>
 #include <pcl/console/time.h>   // TicToc
+#include <iostream>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/filters/voxel_grid.h>
 
 namespace fs = std::filesystem;
 //typedef pcl::PointXYZ PointT;
@@ -27,10 +31,15 @@ print4x4Matrix (const Eigen::Matrix4d & matrix)
 
 int main (int argc, char** argv)
 {
+
+
   pcl::PointCloud<pcl::PointXYZ>::Ptr map (new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr frame (new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_bu (new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_icp (new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr frame_filtered (new pcl::PointCloud<pcl::PointXYZ>);
+  //pcl::PCLPointCloud2::Ptr frame (new pcl::PCLPointCloud2 ());
+  //pcl::PCLPointCloud2::Ptr frame_filtered (new pcl::PCLPointCloud2 ());
 
   std::string directory_path = "../dataset/frames";
 
@@ -39,7 +48,8 @@ int main (int argc, char** argv)
     PCL_ERROR ("Couldn't read file map.pcd \n");
     return (-1);
   }
-  if (pcl::io::loadPCDFile<pcl::PointXYZ> ("../dataset/frames/frame_0.pcd", *frame) == -1) // load the file
+
+  if (pcl::io::loadPCDFile<pcl::PointXYZ> ("../dataset/frames/frame_20.pcd", *frame) == -1) // load the file
         {
           PCL_ERROR ("Couldn't read file frame_0.pcd \n");
           return (-1);
@@ -72,22 +82,34 @@ int main (int argc, char** argv)
   print4x4Matrix (transformation_matrix);
 
 
-// Executing the transformation
-  pcl::transformPointCloud (*frame, *cloud_icp, transformation_matrix);
-  *cloud_bu = *cloud_icp;  // We backup cloud_icp into cloud_tr for later use
+std::cerr << "PointCloud before filtering: " << frame->width * frame->height 
+       << " data points (" << pcl::getFieldsList (*frame) << ")." << std::endl;
+
+// Create the filtering object
+  pcl::VoxelGrid<pcl::PointXYZ> sor;
+  sor.setInputCloud (frame);
+  sor.setLeafSize (0.1f, 0.1f, 0.1f);
+  sor.filter (*frame_filtered);
+
+  std::cerr << "PointCloud after filtering: " << frame_filtered->width * frame_filtered->height 
+       << " data points (" << pcl::getFieldsList (*frame_filtered) << ")." << std::endl;
 
   int iterations = 1; 
-  pcl::console::TicToc time;
-  time.tic ();
-  // pcl::PointCloud<pcl::PointXYZ>::PointCloudT
-  /*pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
-  icp.setMaximumIterations (iterations);
-  icp.setInputSource (frame);
-  icp.setInputTarget (map);
-  icp.align (*frame);
-  icp.setMaximumIterations (1);  // We set this variable to 1 for the next time we will call .align () function
-  std::cout << "Applied " << iterations << " ICP iteration(s) in " << time.toc () << " ms" << std::endl;
-*/
+
+  pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
+  icp.setInputSource(frame);
+  icp.setInputTarget(map);
+
+  pcl::PointCloud<pcl::PointXYZ> Final;
+  icp.align(Final);
+
+  std::cout << "has converged:" << icp.hasConverged() << " score: " <<
+  icp.getFitnessScore() << std::endl;
+  std::cout << icp.getFinalTransformation() << std::endl;
+  transformation_matrix = icp.getFinalTransformation().cast<double>();
+  print4x4Matrix (transformation_matrix);
+
+  
   /*
   for (const auto & file: fs::directory_iterator(directory_path)) {
       std::cout << file.path() << std::endl;

@@ -15,8 +15,6 @@
 #include <pcl/filters/voxel_grid.h>
 
 namespace fs = std::filesystem;
-//typedef pcl::PointXYZ PointT;
-//typedef pcl::PointCloud<PointT> PointCloudT;
 
 void
 print4x4Matrix (const Eigen::Matrix4d & matrix)
@@ -38,8 +36,6 @@ int main (int argc, char** argv)
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_bu (new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_icp (new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr frame_filtered (new pcl::PointCloud<pcl::PointXYZ>);
-  //pcl::PCLPointCloud2::Ptr frame (new pcl::PCLPointCloud2 ());
-  //pcl::PCLPointCloud2::Ptr frame_filtered (new pcl::PCLPointCloud2 ());
 
   std::string directory_path = "../dataset/frames";
 
@@ -82,10 +78,10 @@ int main (int argc, char** argv)
   print4x4Matrix (transformation_matrix);
 
 
-std::cerr << "PointCloud before filtering: " << frame->width * frame->height 
+  std::cerr << "PointCloud before filtering: " << frame->width * frame->height 
        << " data points (" << pcl::getFieldsList (*frame) << ")." << std::endl;
 
-// Create the filtering object
+  // Create the filtering object
   pcl::VoxelGrid<pcl::PointXYZ> sor;
   sor.setInputCloud (frame);
   sor.setLeafSize (0.1f, 0.1f, 0.1f);
@@ -109,28 +105,19 @@ std::cerr << "PointCloud before filtering: " << frame->width * frame->height
   transformation_matrix = icp.getFinalTransformation().cast<double>();
   print4x4Matrix (transformation_matrix);
 
-  
-  /*
-  for (const auto & file: fs::directory_iterator(directory_path)) {
-      std::cout << file.path() << std::endl;
-      if (pcl::io::loadPCDFile<pcl::PointXYZ> (file.path(), *frame) == -1) // load the file
-        {
-          PCL_ERROR ("Couldn't read file frame_0.pcd \n");
-          return (-1);
-        }
+  float roll,pitch,yaw;
+  std::cout << "\nThe input Euler angles are : " << std::endl;
+  std::cout << "roll : " << roll << " ,pitch : " << pitch << " ,yaw : " << yaw << std::endl;
 
-      std::cout << "Loaded "
-            << frame->width * frame->height
-            << " data points from frame.pcd with the following fields: "
-            << std::endl;  
-    }*/
-  
+  Eigen::Affine3f transformation;
 
-  
-  /*for (const auto& point_map: *map)
-    std::cout << "    " << point_map.x
-              << " "    << point_map.y
-              << " "    << point_map.z << std::endl;*/
+  transformation (0,0), transformation (0,1), transformation (0,2) = transformation_matrix (0, 0), transformation_matrix (0, 1), transformation_matrix (0, 2);
+  transformation (1,0), transformation (1,1), transformation (1,2) = transformation_matrix (1, 0), transformation_matrix (1, 1), transformation_matrix (1, 2);
+  transformation (2,0), transformation (2,1), transformation (2,2) = transformation_matrix (2, 0), transformation_matrix (2, 1), transformation_matrix (2, 2);
 
-  return (0);
+  pcl::getEulerAngles(transformation,roll,pitch,yaw);
+  std::cout << "\nThe output Euler angles (using getEulerAngles function) are : " << std::endl;
+  std::cout << "roll : " << roll << " ,pitch : " << pitch << " ,yaw : " << yaw << std::endl;
+
+  return 0;
 }

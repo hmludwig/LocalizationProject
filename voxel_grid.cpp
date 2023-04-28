@@ -1,48 +1,51 @@
 #include <iostream>
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
-#include <pcl/registration/icp.h>
+#include<fstream>
+#include <vector>
+#include <iostream>
+#include <vector>
+#include <boost/algorithm/string.hpp>
+#include <sstream>
 
-int
- main ()
+using namespace std;
+template <class InIt, class OutIt>
+void Split(InIt begin, InIt end, OutIt splits)
 {
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_in (new pcl::PointCloud<pcl::PointXYZ>(5,1));
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out (new pcl::PointCloud<pcl::PointXYZ>);
+    InIt current = begin;
+    while (begin != end)
+    {
+        if (*begin == ',')
+        {
+            *splits++ = std::string(current,begin);
+            current = ++begin;
+        }
+        else
+            ++begin;
+    }
+    *splits++ = std::string(current,begin);
+}
 
-  // Fill in the CloudIn data
-  for (auto& point : *cloud_in)
-  {
-    point.x = 1024 * rand() / (RAND_MAX + 1.0f);
-    point.y = 1024 * rand() / (RAND_MAX + 1.0f);
-    point.z = 1024 * rand() / (RAND_MAX + 1.0f);
-  }
-  
-  std::cout << "Saved " << cloud_in->size () << " data points to input:" << std::endl;
-      
-  for (auto& point : *cloud_in)
-    std::cout << point << std::endl;
-      
-  *cloud_out = *cloud_in;
-  
-  std::cout << "size:" << cloud_out->size() << std::endl;
-  for (auto& point : *cloud_out)
-    point.x += 0.7f;
+void read()
+{
+    ifstream fin;
+    float Frame, x, y, z, roll, pitch, yaw;
+    string line;
+    vector<float>  m_data;
+    // Open an existing file
+    fin.open("/home/harald/LocalizationProject/dataset/ground_truth.csv");
 
-  std::cout << "Transformed " << cloud_in->size () << " data points:" << std::endl;
-      
-  for (auto& point : *cloud_out)
-    std::cout << point << std::endl;
-
-  pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
-  icp.setInputSource(cloud_in);
-  icp.setInputTarget(cloud_out);
-  
-  pcl::PointCloud<pcl::PointXYZ> Final;
-  icp.align(Final);
-
-  std::cout << "has converged:" << icp.hasConverged() << " score: " <<
-  icp.getFitnessScore() << std::endl;
-  std::cout << icp.getFinalTransformation() << std::endl;
-
- return (0);
+    vector<string> strs;
+    vector<std::string> m_vecFields;
+    while(!fin.eof()){
+          fin >> line;
+          //boost::split(strs, line, boost::is_any_of(","));
+          cout << line << std::endl;
+          //Split(line.begin(), line.end(), back_inserter(m_vecFields));
+          //cout << m_vecFields[0] << endl;
+          
+    }
+}
+int main()
+{
+    read();
+    return 0;
 }

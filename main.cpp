@@ -55,7 +55,7 @@ int main (int argc, char** argv)
   std::string directory_path = "/home/harald/LocalizationProject/dataset/frames";
   for (const auto & file: fs::directory_iterator(directory_path)) {
     std::cout << file.path() << std::endl;
-    if (pcl::io::loadPCDFile<pcl::PointXYZ> (file.path(), *frame) == -1) // load the file
+    if (pcl::io::loadPCDFile<pcl::PointXYZ> ("/home/harald/LocalizationProject/dataset/frames/frame_1013.pcd", *frame) == -1) // load the file
       {
         PCL_ERROR ("Couldn't read file\n");
         return (-1);
